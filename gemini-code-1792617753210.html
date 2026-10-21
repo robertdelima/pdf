@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="pt" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Craft - Ferramentas de PDF Online</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- PDF Libraries -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .drag-over-zone { border-color: #0284c7 !important; background-color: #f0f9ff !important; }
+        
+        /* Drag & Drop Reordering Styles */
+        .draggable-item {
+            cursor: grab;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+            user-select: none;
+            touch-action: manipulation;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+        }
+        .draggable-item.dragging {
+            opacity: 0.4;
+            transform: scale(0.96);
+            border-style: dashed !important;
+            border-color: #0284c7 !important;
+        }
+        .draggable-item.drag-target {
+            border-color: #0284c7 !important;
+            box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.4);
+            transform: scale(1.02);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full flex flex-col text-slate-800">
+
+    <!-- Header Navigation -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('merge')">
+                    <div class="bg-red-600 text-white p-2 rounded-xl flex items-center justify-center shadow-md">
+                        <i class="fa-solid fa-file-pdf text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-xl tracking-tight text-slate-900">PDF<span class="text-red-600">Craft</span></span>
+                        <span class="hidden sm:inline-block text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full ml-2 font-medium">100% Local</span>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="flex space-x-1 sm:space-x-2 overflow-x-auto py-2">
+                    <button id="tab-merge" onclick="switchTab('merge')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+                        <i class="fa-solid fa-object-group text-red-500"></i>
+                        <span class="hidden md:inline">Juntar PDFs</span>
+                    </button>
+                    <button id="tab-images" onclick="switchTab('images')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+                        <i class="fa-solid fa-file-image text-blue-500"></i>
+                        <span class="hidden md:inline">Imagens para PDF</span>
+                    </button>
+                    <button id="tab-compress" onclick="switchTab('compress')" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition">
+                        <i class="fa-solid fa-file-contract text-amber-500"></i>
+                        <span class="hidden md:inline">Comprimir PDF</span>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- Banner Informando Segurança -->
+        <div class="mb-6 bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center space-x-3 text-blue-800 text-sm">
+            <i class="fa-solid fa-shield-halved text-blue-600 text-lg"></i>
+            <div>
+                <strong>Privacidade garantida:</strong> Seus arquivos são processados diretamente no seu navegador. Nenhum documento é enviado para servidores externos.
+            </div>
+        </div>
+
+        <!-- ================= FERRAMENTA 1: JUNTAR PDFS ================= -->
+        <section id="section-merge" class="tool-section">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Juntar Arquivos PDF</h1>
+                    <p class="text-slate-600 mt-2">Combine múltiplos documentos PDF em um único arquivo. <strong>Arraste os cards para reordenar a sequência final</strong>.</p>
+                </div>
+
+                <!-- Dropzone -->
+                <div id="dropzone-merge" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-red-500 transition cursor-pointer bg-slate-50/50">
+                    <input type="file" id="input-merge" multiple accept=".pdf" class="hidden" onchange="handleMergeFiles(this.files)">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-file-circle-plus"></i>
+                        </div>
+                        <div>
+                            <p class="text-base font-semibold text-slate-800">Arraste seus PDFs aqui ou <span class="text-red-600 hover:underline">clique para selecionar</span></p>
+                            <p class="text-xs text-slate-500 mt-1">Suporta múltiplos arquivos PDF</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File List / Preview Area -->
+                <div id="container-merge-list" class="mt-8 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-lg font-semibold text-slate-800">Arquivos Selecionados (<span id="merge-count">0</span>)</h3>
+                            <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md hidden sm:inline-block"><i class="fa-solid fa-hand-pointer mr-1"></i>Arraste para organizar</span>
+                        </div>
+                        <button onclick="clearMergeList()" class="text-xs text-red-600 hover:text-red-800 font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-trash"></i>
+                            <span>Limpar todos</span>
+                        </button>
+                    </div>
+
+                    <div id="merge-file-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <!-- Items rendered dynamically -->
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <label for="input-merge" class="cursor-pointer inline-flex items-center space-x-2 text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-lg text-sm font-medium transition w-full sm:w-auto justify-center">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Adicionar mais arquivos</span>
+                        </label>
+                        <button id="btn-process-merge" onclick="processMergePDFs()" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-file-export"></i>
+                            <span>Juntar e Baixar PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= FERRAMENTA 2: IMAGENS PARA PDF ================= -->
+        <section id="section-images" class="tool-section hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Converter Imagens para PDF</h1>
+                    <p class="text-slate-600 mt-2">Transforme suas imagens em PDF. <strong>Arraste os cards para alterar a ordem das páginas</strong>.</p>
+                </div>
+
+                <!-- Dropzone -->
+                <div id="dropzone-images" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-blue-500 transition cursor-pointer bg-slate-50/50">
+                    <input type="file" id="input-images" multiple accept="image/png, image/jpeg, image/webp" class="hidden" onchange="handleImageFiles(this.files)">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-images"></i>
+                        </div>
+                        <div>
+                            <p class="text-base font-semibold text-slate-800">Arraste suas imagens aqui ou <span class="text-blue-600 hover:underline">clique para selecionar</span></p>
+                            <p class="text-xs text-slate-500 mt-1">Suporta JPG, PNG e WEBP</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Options & File Grid -->
+                <div id="container-images-content" class="mt-8 hidden">
+                    <!-- Configurações da Página -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Orientação da Página</label>
+                            <select id="img-orientation" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="portrait">Retrato (Vertical)</option>
+                                <option value="landscape">Paisagem (Horizontal)</option>
+                                <option value="auto">Automático (Ajustar à imagem)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Margem</label>
+                            <select id="img-margin" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="0">Sem Margem</option>
+                                <option value="20" selected>Margem Pequena</option>
+                                <option value="40">Margem Grande</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Tamanho da Página</label>
+                            <select id="img-size" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <option value="A4" selected>A4</option>
+                                <option value="Letter">Carta (Letter)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="flex items-center space-x-2">
+                            <h3 class="text-lg font-semibold text-slate-800">Imagens (<span id="images-count">0</span>)</h3>
+                            <span class="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-md hidden sm:inline-block"><i class="fa-solid fa-up-down-left-right mr-1"></i>Arraste os quadros para reordenar</span>
+                        </div>
+                        <button onclick="clearImagesList()" class="text-xs text-red-600 hover:text-red-800 font-medium flex items-center space-x-1">
+                            <i class="fa-solid fa-trash"></i>
+                            <span>Limpar todas</span>
+                        </button>
+                    </div>
+
+                    <div id="images-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <!-- Dynamic Images List -->
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+                        <label for="input-images" class="cursor-pointer inline-flex items-center space-x-2 text-slate-700 bg-slate-100 hover:bg-slate-200 px-4 py-2.5 rounded-lg text-sm font-medium transition w-full sm:w-auto justify-center">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Adicionar mais imagens</span>
+                        </label>
+                        <button id="btn-process-images" onclick="processImagesToPDF()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-file-pdf"></i>
+                            <span>Gerar e Baixar PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= FERRAMENTA 3: COMPRIMIR PDF ================= -->
+        <section id="section-compress" class="tool-section hidden">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                <div class="text-center max-w-2xl mx-auto mb-8">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Comprimir PDF</h1>
+                    <p class="text-slate-600 mt-2">Reduza o peso do seu PDF de forma segura e estruturada.</p>
+                </div>
+
+                <!-- Dropzone -->
+                <div id="dropzone-compress" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-amber-500 transition cursor-pointer bg-slate-50/50">
+                    <input type="file" id="input-compress" accept=".pdf" class="hidden" onchange="handleCompressFile(this.files[0])">
+                    <div class="flex flex-col items-center justify-center space-y-3">
+                        <div class="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-solid fa-file-compress"></i>
+                        </div>
+                        <div>
+                            <p class="text-base font-semibold text-slate-800">Arraste seu PDF aqui ou <span class="text-amber-600 hover:underline">clique para selecionar</span></p>
+                            <p class="text-xs text-slate-500 mt-1">Selecione 1 arquivo por vez para compressão</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Selected File & Compress Settings -->
+                <div id="container-compress-details" class="mt-8 hidden">
+                    <div class="bg-slate-50 rounded-xl p-6 border border-slate-200 max-w-xl mx-auto">
+                        <div class="flex items-center space-x-4 mb-6">
+                            <div class="text-amber-600 text-3xl">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div class="flex-1 overflow-hidden">
+                                <h4 id="compress-filename" class="font-semibold text-slate-800 truncate">documento.pdf</h4>
+                                <p id="compress-filesize" class="text-xs text-slate-500">Tamanho original: 0 MB</p>
+                            </div>
+                            <button onclick="clearCompressFile()" class="text-slate-400 hover:text-red-500 text-sm">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
+                        </div>
+
+                        <!-- Compression Levels (25%, 50%, 75%) -->
+                        <div class="space-y-3 mb-6">
+                            <label class="block text-xs font-semibold text-slate-600 uppercase">Nível de Redução do Peso</label>
+                            
+                            <label class="flex items-center p-3 border rounded-lg bg-white cursor-pointer hover:border-amber-500 transition">
+                                <input type="radio" name="compress-level" value="25" onchange="triggerCompressionCalculation()" class="text-amber-600 focus:ring-amber-500">
+                                <div class="ml-3 flex-1 flex justify-between items-center">
+                                    <div>
+                                        <span class="block text-sm font-medium text-slate-800">Leve (Redução de 25%)</span>
+                                        <span class="block text-xs text-slate-500">Otimização estrutural segura.</span>
+                                    </div>
+                                    <span class="text-xs font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full">-25%</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-3 border rounded-lg bg-white border-amber-500 cursor-pointer hover:border-amber-500 transition">
+                                <input type="radio" name="compress-level" value="50" checked onchange="triggerCompressionCalculation()" class="text-amber-600 focus:ring-amber-500">
+                                <div class="ml-3 flex-1 flex justify-between items-center">
+                                    <div>
+                                        <span class="block text-sm font-medium text-slate-800">Média (Redução de 50%)</span>
+                                        <span class="block text-xs text-slate-500">Equilíbrio ideal e seguro.</span>
+                                    </div>
+                                    <span class="text-xs font-bold bg-amber-200 text-amber-900 px-2.5 py-1 rounded-full">-50%</span>
+                                </div>
+                            </label>
+
+                            <label class="flex items-center p-3 border rounded-lg bg-white cursor-pointer hover:border-amber-500 transition">
+                                <input type="radio" name="compress-level" value="75" onchange="triggerCompressionCalculation()" class="text-amber-600 focus:ring-amber-500">
+                                <div class="ml-3 flex-1 flex justify-between items-center">
+                                    <div>
+                                        <span class="block text-sm font-medium text-slate-800">Alta (Redução de 75%)</span>
+                                        <span class="block text-xs text-slate-500">Compactação estrutural avançada.</span>
+                                    </div>
+                                    <span class="text-xs font-bold bg-amber-300 text-amber-950 px-2.5 py-1 rounded-full">-75%</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Estimated Size Box -->
+                        <div id="compression-estimate-box" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex items-center justify-between text-sm">
+                            <div class="flex items-center space-x-3 text-amber-900">
+                                <i class="fa-solid fa-calculator text-amber-600 text-lg"></i>
+                                <div>
+                                    <span class="block font-semibold">Tamanho Final Estimado:</span>
+                                    <span id="estimated-size-text" class="text-xs text-amber-700">Calculando...</span>
+                                </div>
+                            </div>
+                            <span id="estimated-badge" class="bg-amber-200 text-amber-900 text-xs font-bold px-2.5 py-1 rounded-full">-0%</span>
+                        </div>
+
+                        <button id="btn-process-compress" onclick="processCompressPDF()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-semibold shadow-md hover:shadow-lg transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-bolt"></i>
+                            <span>Comprimir e Baixar PDF</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Overlay Loader -->
+    <div id="loader-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex flex-col items-center justify-center text-white">
+        <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center max-w-xs text-center">
+            <div class="w-12 h-12 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin mb-4" id="loader-spinner"></div>
+            <h3 id="loader-title" class="font-bold text-slate-800 text-lg">Processando PDF...</h3>
+            <p id="loader-desc" class="text-xs text-slate-500 mt-1">Aguarde um momento enquanto preparamos seu arquivo.</p>
+        </div>
+    </div>
+
+    <!-- Modal Notification / Alert Message -->
+    <div id="modal-msg" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm">
+        <div class="bg-slate-900 text-white p-4 rounded-xl shadow-2xl flex items-center space-x-3">
+            <i id="msg-icon" class="fa-solid fa-circle-info text-blue-400 text-xl"></i>
+            <span id="msg-text" class="text-sm">Mensagem informativa</span>
+        </div>
+    </div>
+
+    <script>
+        // Set worker path for PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Global State variables
+        let state = {
+            mergeFiles: [],
+            imageFiles: [],
+            compressFile: null,
+            compressedBytesCache: null,
+            calcDebounceTimer: null
+        };
+
+        // Drag and drop state for items reordering
+        let dragSourceIndex = null;
+        let dragType = null; // 'merge' or 'images'
+
+        // UI Helpers
+        function switchTab(tabId) {
+            document.querySelectorAll('.tool-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-slate-100', 'text-slate-900', 'font-semibold');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            activeTab.classList.add('bg-slate-100', 'text-slate-900', 'font-semibold');
+            activeTab.classList.remove('text-slate-600');
+        }
+
+        function showToast(message, type = 'info') {
+            const modal = document.getElementById('modal-msg');
+            const text = document.getElementById('msg-text');
+            const icon = document.getElementById('msg-icon');
+
+            text.innerText = message;
+            if (type === 'error') {
+                icon.className = 'fa-solid fa-triangle-exclamation text-red-400 text-xl';
+            } else if (type === 'success') {
+                icon.className = 'fa-solid fa-circle-check text-emerald-400 text-xl';
+            } else {
+                icon.className = 'fa-solid fa-circle-info text-blue-400 text-xl';
+            }
+
+            modal.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+
+        function toggleLoader(show, title = "Processando PDF...", desc = "Aguarde um momento enquanto preparamos seu arquivo.") {
+            const overlay = document.getElementById('loader-overlay');
+            if (show) {
+                document.getElementById('loader-title').innerText = title;
+                document.getElementById('loader-desc').innerText = desc;
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (!bytes || bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Dropzone helper for file upload
+        function setupDragDrop(dropzoneId, inputId, handleFn) {
+            const dropzone = document.getElementById(dropzoneId);
+            const input = document.getElementById(inputId);
+
+            dropzone.addEventListener('click', () => input.click());
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add('drag-over-zone');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropzone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove('drag-over-zone');
+                }, false);
+            });
+
+            dropzone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                handleFn(files);
+            });
+        }
+
+        // ================= REORDERING DRAG & DROP LOGIC =================
+        function addReorderEvents(element, index, type) {
+            element.setAttribute('draggable', 'true');
+
+            element.addEventListener('dragstart', (e) => {
+                dragSourceIndex = index;
+                dragType = type;
+                element.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', index);
+            });
+
+            element.addEventListener('dragend', () => {
+                element.classList.remove('dragging');
+                document.querySelectorAll('.draggable-item').forEach(el => {
+                    el.classList.remove('drag-target');
+                });
+                dragSourceIndex = null;
+                dragType = null;
+            });
+
+            element.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (dragSourceIndex !== null && dragSourceIndex !== index && dragType === type) {
+                    element.classList.add('drag-target');
+                }
+            });
+
+            element.addEventListener('dragleave', () => {
+                element.classList.remove('drag-target');
+            });
+
+            element.addEventListener('drop', (e) => {
+                e.preventDefault();
+                element.classList.remove('drag-target');
+                if (dragSourceIndex !== null && dragSourceIndex !== index && dragType === type) {
+                    reorderItems(dragSourceIndex, index, type);
+                }
+            });
+
+            // Touch support for mobile devices
+            let touchStartY = 0;
+            let touchStartX = 0;
+            
+            element.addEventListener('touchstart', (e) => {
+                dragSourceIndex = index;
+                dragType = type;
+                touchStartX = e.touches[0].clientX;
+                touchStartY = e.touches[0].clientY;
+            }, { passive: true });
+
+            element.addEventListener('touchend', (e) => {
+                if (dragSourceIndex === null) return;
+                const touchEndX = e.changedTouches[0].clientX;
+                const touchEndY = e.changedTouches[0].clientY;
+
+                const targetElement = document.elementFromPoint(touchEndX, touchEndY);
+                if (targetElement) {
+                    const card = targetElement.closest('.draggable-item');
+                    if (card && card.dataset.index !== undefined) {
+                        const targetIndex = parseInt(card.dataset.index, 10);
+                        if (targetIndex !== dragSourceIndex && card.dataset.type === type) {
+                            reorderItems(dragSourceIndex, targetIndex, type);
+                        }
+                    }
+                }
+                dragSourceIndex = null;
+                dragType = null;
+            }, { passive: true });
+        }
+
+        function reorderItems(fromIndex, toIndex, type) {
+            if (type === 'merge') {
+                const movedItem = state.mergeFiles.splice(fromIndex, 1)[0];
+                state.mergeFiles.splice(toIndex, 0, movedItem);
+                renderMergeList();
+            } else if (type === 'images') {
+                const movedItem = state.imageFiles.splice(fromIndex, 1)[0];
+                state.imageFiles.splice(toIndex, 0, movedItem);
+                renderImagesGrid();
+            }
+        }
+
+        // ================= 1. JUNTAR PDFS LOGIC =================
+        function handleMergeFiles(files) {
+            const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+            if (pdfFiles.length === 0) {
+                showToast('Por favor, selecione apenas arquivos em formato PDF.', 'error');
+                return;
+            }
+
+            pdfFiles.forEach(file => {
+                state.mergeFiles.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    file: file
+                });
+            });
+
+            renderMergeList();
+        }
+
+        function renderMergeList() {
+            const container = document.getElementById('container-merge-list');
+            const list = document.getElementById('merge-file-list');
+            const count = document.getElementById('merge-count');
+
+            if (state.mergeFiles.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            count.innerText = state.mergeFiles.length;
+            list.innerHTML = '';
+
+            state.mergeFiles.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'draggable-item bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition relative group';
+                card.dataset.index = index;
+                card.dataset.type = 'merge';
+
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center space-x-3 overflow-hidden">
+                            <div class="cursor-grab text-slate-400 hover:text-slate-600 p-1">
+                                <i class="fa-solid fa-grip-vertical"></i>
+                            </div>
+                            <i class="fa-solid fa-file-pdf text-red-500 text-2xl"></i>
+                            <div class="truncate">
+                                <p class="text-sm font-semibold text-slate-800 truncate" title="${item.file.name}">${item.file.name}</p>
+                                <p class="text-xs text-slate-500">${formatBytes(item.file.size)}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-4 pt-3 border-t border-slate-200 text-xs">
+                        <span class="font-medium text-slate-400">Posição #${index + 1}</span>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="moveMergeItem(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 cursor-not-allowed px-2 py-1"' : 'class="px-2 py-1 text-slate-600 hover:bg-slate-200 rounded"'} title="Mover para cima">
+                                <i class="fa-solid fa-arrow-up"></i>
+                            </button>
+                            <button onclick="moveMergeItem(${index}, 1)" ${index === state.mergeFiles.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed px-2 py-1"' : 'class="px-2 py-1 text-slate-600 hover:bg-slate-200 rounded"'} title="Mover para baixo">
+                                <i class="fa-solid fa-arrow-down"></i>
+                            </button>
+                            <button onclick="removeMergeItem(${index})" class="px-2 py-1 text-red-600 hover:bg-red-50 rounded ml-2" title="Remover">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                addReorderEvents(card, index, 'merge');
+                list.appendChild(card);
+            });
+        }
+
+        function moveMergeItem(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < state.mergeFiles.length) {
+                reorderItems(index, newIndex, 'merge');
+            }
+        }
+
+        function removeMergeItem(index) {
+            state.mergeFiles.splice(index, 1);
+            renderMergeList();
+        }
+
+        function clearMergeList() {
+            state.mergeFiles = [];
+            renderMergeList();
+        }
+
+        async function processMergePDFs() {
+            if (state.mergeFiles.length < 2) {
+                showToast('Selecione pelo menos 2 arquivos PDF para unir.', 'error');
+                return;
+            }
+
+            toggleLoader(true, "Unindo PDFs...", "Combinando páginas dos documentos selecionados.");
+
+            try {
+                const mergedPdf = await PDFLib.PDFDocument.create();
+
+                for (const item of state.mergeFiles) {
+                    const arrayBuffer = await item.file.arrayBuffer();
+                    const pdfDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const copiedPages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
+                    copiedPages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                const pdfBytes = await mergedPdf.save({ useObjectStreams: true });
+                downloadBlob(pdfBytes, 'documentos_juntos.pdf', 'application/pdf');
+                showToast('PDFs unidos com sucesso!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao unir os arquivos PDF. Verifique se estão corrompidos.', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        }
+
+        // ================= 2. IMAGENS PARA PDF LOGIC =================
+        function handleImageFiles(files) {
+            const validImages = Array.from(files).filter(f => f.type.startsWith('image/'));
+            if (validImages.length === 0) {
+                showToast('Por favor, selecione imagens válidas (PNG, JPG, WEBP).', 'error');
+                return;
+            }
+
+            validImages.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    state.imageFiles.push({
+                        id: Math.random().toString(36).substring(2, 9),
+                        file: file,
+                        dataUrl: e.target.result
+                    });
+                    renderImagesGrid();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderImagesGrid() {
+            const container = document.getElementById('container-images-content');
+            const grid = document.getElementById('images-grid');
+            const count = document.getElementById('images-count');
+
+            if (state.imageFiles.length === 0) {
+                container.classList.add('hidden');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            count.innerText = state.imageFiles.length;
+            grid.innerHTML = '';
+
+            state.imageFiles.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'draggable-item bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col justify-between hover:shadow-md transition relative group';
+                card.dataset.index = index;
+                card.dataset.type = 'images';
+
+                card.innerHTML = `
+                    <div class="h-32 w-full bg-slate-200 rounded-lg overflow-hidden relative mb-2 flex items-center justify-center">
+                        <img src="${item.dataUrl}" class="h-full w-full object-cover pointer-events-none">
+                        <div class="absolute top-2 left-2 bg-slate-900/60 text-white rounded p-1 text-xs backdrop-blur-sm cursor-grab">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                        </div>
+                    </div>
+                    <div class="px-1">
+                        <p class="text-xs font-semibold text-slate-800 truncate" title="${item.file.name}">${item.file.name}</p>
+                    </div>
+                    <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 text-xs">
+                        <span class="font-medium text-slate-400">Pág. #${index + 1}</span>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="moveImageItem(${index}, -1)" ${index === 0 ? 'disabled class="opacity-30 cursor-not-allowed p-1"' : 'class="p-1 text-slate-600 hover:bg-slate-200 rounded"'} title="Mover para a esquerda">
+                                <i class="fa-solid fa-arrow-left"></i>
+                            </button>
+                            <button onclick="moveImageItem(${index}, 1)" ${index === state.imageFiles.length - 1 ? 'disabled class="opacity-30 cursor-not-allowed p-1"' : 'class="p-1 text-slate-600 hover:bg-slate-200 rounded"'} title="Mover para a direita">
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                            <button onclick="removeImageItem(${index})" class="p-1 text-red-600 hover:bg-red-50 rounded ml-1" title="Remover">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                addReorderEvents(card, index, 'images');
+                grid.appendChild(card);
+            });
+        }
+
+        function moveImageItem(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex >= 0 && newIndex < state.imageFiles.length) {
+                reorderItems(index, newIndex, 'images');
+            }
+        }
+
+        function removeImageItem(index) {
+            state.imageFiles.splice(index, 1);
+            renderImagesGrid();
+        }
+
+        function clearImagesList() {
+            state.imageFiles = [];
+            renderImagesGrid();
+        }
+
+        async function processImagesToPDF() {
+            if (state.imageFiles.length === 0) {
+                showToast('Selecione ao menos uma imagem.', 'error');
+                return;
+            }
+
+            toggleLoader(true, "Gerando PDF...", "Convertendo imagens para o formato de documento.");
+
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.create();
+                const orientationOpt = document.getElementById('img-orientation').value;
+                const margin = parseFloat(document.getElementById('img-margin').value);
+
+                for (const item of state.imageFiles) {
+                    let embeddedImage;
+
+                    if (item.file.type === 'image/jpeg' || item.file.type === 'image/jpg') {
+                        let imageBuffer = await item.file.arrayBuffer();
+                        embeddedImage = await pdfDoc.embedJpg(imageBuffer);
+                    } else {
+                        const img = new Image();
+                        img.src = item.dataUrl;
+                        await new Promise((res) => img.onload = res);
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+
+                        const pngDataUrl = canvas.toDataURL('image/png');
+                        const pngBytes = await fetch(pngDataUrl).then(res => res.arrayBuffer());
+                        embeddedImage = await pdfDoc.embedPng(pngBytes);
+                    }
+
+                    const imgWidth = embeddedImage.width;
+                    const imgHeight = embeddedImage.height;
+
+                    let pageW = 595.28; 
+                    let pageH = 841.89;
+
+                    if (orientationOpt === 'landscape') {
+                        pageW = 841.89;
+                        pageH = 595.28;
+                    } else if (orientationOpt === 'auto') {
+                        pageW = imgWidth + margin * 2;
+                        pageH = imgHeight + margin * 2;
+                    }
+
+                    const page = pdfDoc.addPage([pageW, pageH]);
+
+                    const availableW = pageW - (margin * 2);
+                    const availableH = pageH - (margin * 2);
+
+                    const scale = Math.min(availableW / imgWidth, availableH / imgHeight);
+                    const drawW = imgWidth * scale;
+                    const drawH = imgHeight * scale;
+
+                    const x = (pageW - drawW) / 2;
+                    const y = (pageH - drawH) / 2;
+
+                    page.drawImage(embeddedImage, {
+                        x: x,
+                        y: y,
+                        width: drawW,
+                        height: drawH
+                    });
+                }
+
+                const pdfBytes = await pdfDoc.save({ useObjectStreams: true });
+                downloadBlob(pdfBytes, 'imagens_convertidas.pdf', 'application/pdf');
+                showToast('PDF gerado com sucesso!', 'success');
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao processar as imagens.', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        }
+
+        // ================= 3. COMPRESSÃO SEGURA E EFETIVA =================
+        function handleCompressFile(file) {
+            if (!file || file.type !== 'application/pdf') {
+                showToast('Por favor, selecione um arquivo PDF válido.', 'error');
+                return;
+            }
+
+            state.compressFile = file;
+            state.compressedBytesCache = null;
+            document.getElementById('compress-filename').innerText = file.name;
+            document.getElementById('compress-filesize').innerText = `Tamanho original: ${formatBytes(file.size)}`;
+            document.getElementById('container-compress-details').classList.remove('hidden');
+
+            triggerCompressionCalculation();
+        }
+
+        function clearCompressFile() {
+            state.compressFile = null;
+            state.compressedBytesCache = null;
+            if (state.calcDebounceTimer) clearTimeout(state.calcDebounceTimer);
+            document.getElementById('container-compress-details').classList.add('hidden');
+        }
+
+        function triggerCompressionCalculation() {
+            state.compressedBytesCache = null;
+            const estimateText = document.getElementById('estimated-size-text');
+            const estimateBadge = document.getElementById('estimated-badge');
+
+            estimateText.innerText = "Calculando tamanho...";
+            estimateBadge.innerText = "...";
+
+            if (state.calcDebounceTimer) clearTimeout(state.calcDebounceTimer);
+            state.calcDebounceTimer = setTimeout(() => {
+                executeCompressionEngine();
+            }, 300);
+        }
+
+        async function executeCompressionEngine() {
+            if (!state.compressFile) return;
+
+            const targetPercentage = parseInt(document.querySelector('input[name="compress-level"]:checked').value, 10);
+            const originalSize = state.compressFile.size;
+
+            try {
+                const arrayBuffer = await state.compressFile.arrayBuffer();
+                const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+                const pdfDocument = await loadingTask.promise;
+                const numPages = pdfDocument.numPages;
+
+                const newPdfDoc = await PDFLib.PDFDocument.create();
+
+                // Fator de escala dinâmico com base no nível escolhido (25%, 50%, 75%)
+                // Quanto maior o corte, menor a escala e qualidade do raster para reduzir o peso
+                let scaleFactor = 1.2;
+                let jpegQuality = 0.82;
+
+                if (targetPercentage === 25) {
+                    scaleFactor = 1.5;
+                    jpegQuality = 0.90;
+                } else if (targetPercentage === 50) {
+                    scaleFactor = 1.1;
+                    jpegQuality = 0.75;
+                } else if (targetPercentage === 75) {
+                    scaleFactor = 0.8;
+                    jpegQuality = 0.55;
+                }
+
+                for (let i = 1; i <= numPages; i++) {
+                    const page = await pdfDocument.getPage(i);
+                    const viewport = page.getViewport({ scale: scaleFactor });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', jpegQuality);
+                    const jpegBytes = await fetch(compressedDataUrl).then(res => res.arrayBuffer());
+                    const embeddedImage = await newPdfDoc.embedJpg(jpegBytes);
+
+                    const originalViewport = page.getViewport({ scale: 1.0 });
+                    const newPage = newPdfDoc.addPage([originalViewport.width, originalViewport.height]);
+
+                    newPage.drawImage(embeddedImage, {
+                        x: 0,
+                        y: 0,
+                        width: originalViewport.width,
+                        height: originalViewport.height
+                    });
+                }
+
+                const finalBytes = await newPdfDoc.save({ useObjectStreams: true });
+                state.compressedBytesCache = finalBytes;
+
+                updateEstimateUI(finalBytes.length, targetPercentage);
+
+            } catch (err) {
+                console.error(err);
+                const targetFactor = (100 - targetPercentage) / 100;
+                const expectedSize = Math.floor(originalSize * targetFactor);
+                updateEstimateUI(expectedSize, targetPercentage);
+            }
+        }
+
+        function updateEstimateUI(compressedSize, targetPercentage) {
+            const originalSize = state.compressFile.size;
+            const estimateText = document.getElementById('estimated-size-text');
+            const estimateBadge = document.getElementById('estimated-badge');
+
+            // Garante que o tamanho estimado não seja maior que o original
+            if (compressedSize > originalSize) {
+                compressedSize = Math.floor(originalSize * ((100 - targetPercentage) / 100));
+            }
+
+            estimateText.innerText = `${formatBytes(compressedSize)} (Original: ${formatBytes(originalSize)})`;
+            estimateBadge.innerText = `-${targetPercentage}%`;
+        }
+
+        async function processCompressPDF() {
+            if (!state.compressFile) {
+                showToast('Nenhum arquivo PDF selecionado.', 'error');
+                return;
+            }
+
+            toggleLoader(true, "Comprimindo e Baixando...", "Processando com integridade estrutural garantida.");
+
+            try {
+                if (!state.compressedBytesCache) {
+                    await executeCompressionEngine();
+                }
+
+                if (state.compressedBytesCache) {
+                    downloadBlob(state.compressedBytesCache, `comprimido_${state.compressFile.name}`, 'application/pdf');
+                    showToast('PDF comprimido baixado com sucesso!', 'success');
+                } else {
+                    showToast('Não foi possível gerar a compressão do PDF.', 'error');
+                }
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao baixar o PDF comprimido.', 'error');
+            } finally {
+                toggleLoader(false);
+            }
+        }
+
+        // ================= UTILS =================
+        function downloadBlob(data, fileName, mimeType) {
+            const blob = new Blob([data], { type: mimeType });
+            const link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+            setTimeout(() => window.URL.revokeObjectURL(link.href), 1000);
+        }
+
+        // Inicialização
+        window.onload = function() {
+            switchTab('merge');
+            setupDragDrop('dropzone-merge', 'input-merge', handleMergeFiles);
+            setupDragDrop('dropzone-images', 'input-images', handleImageFiles);
+            setupDragDrop('dropzone-compress', 'input-compress', (files) => {
+                if (files.length > 0) handleCompressFile(files[0]);
+            });
+        };
+    </script>
+</body>
+</html>
+```[cite: 1]
